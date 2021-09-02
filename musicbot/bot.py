@@ -1113,8 +1113,8 @@ class MusicBot(discord.Client):
         """Provides a basic template for embeds"""
         e = discord.Embed()
         e.colour = 7506394
-        e.set_footer(text='Just-Some-Bots/MusicBot ({})'.format(BOTVERSION), icon_url='https://i.imgur.com/gFHBoZA.png')
-        e.set_author(name=self.user.name, url='https://github.com/Just-Some-Bots/MusicBot', icon_url=self.user.avatar_url)
+        #e.set_footer(text='', icon_url='https://i.ibb.co/nq23Dqj/a-182dbb6116a40c62c9c48ad052c00626.jpg')
+        #e.set_author(name=self.user.name, url='REDACTED', icon_url=self.user.avatar_url)
         return e
 
     async def cmd_resetplaylist(self, player, channel):
@@ -1552,11 +1552,11 @@ class MusicBot(discord.Client):
                     except Exception as e:
                         raise exceptions.CommandError(e, expire_in=30)
 
-                if permissions.max_song_length and info.get('duration', 0) > permissions.max_song_length:
-                    raise exceptions.PermissionsError(
-                        self.str.get('cmd-play-song-limit', "Song duration exceeds limit ({0} > {1})").format(info['duration'], permissions.max_song_length),
-                        expire_in=30
-                    )
+                #if permissions.max_song_length and info.get('duration', 0) > permissions.max_song_length:
+                #    raise exceptions.PermissionsError(
+                #        self.str.get('cmd-play-song-limit', "Song duration exceeds limit ({0} > {1})").format(info['duration'], permissions.max_song_length),
+                #        expire_in=30
+                #    )
 
                 entry, position = await player.playlist.add_entry(song_url, channel=channel, author=author)
 
