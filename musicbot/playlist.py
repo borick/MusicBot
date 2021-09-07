@@ -7,7 +7,7 @@ from itertools import islice
 from collections import deque
 
 from urllib.error import URLError
-from youtube_dl.utils import ExtractorError, DownloadError, UnsupportedError
+from youtube_dlc.utils import ExtractorError, DownloadError, UnsupportedError
 
 from .utils import get_header
 from .constructs import Serializable
@@ -235,7 +235,8 @@ class Playlist(EventEmitter, Serializable):
 
         gooditems = []
         baditems = 0
-
+        count = 0
+        my_max = 25
         for entry_data in info['entries']:
             if entry_data:
                 baseurl = info['webpage_url'].split('playlist?list=')[0]
@@ -251,6 +252,9 @@ class Playlist(EventEmitter, Serializable):
                 except Exception as e:
                     baditems += 1
                     log.error("Error adding entry {}".format(entry_data['id']), exc_info=e)
+                count += 1
+                if count >= my_max:
+                    break
             else:
                 baditems += 1
 

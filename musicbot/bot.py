@@ -11,6 +11,7 @@ import pathlib
 import traceback
 import math
 import re
+from discord.ext import commands
 
 import aiohttp
 import discord
@@ -42,7 +43,11 @@ from .json import Json
 from .constants import VERSION as BOTVERSION
 from .constants import DISCORD_MSG_CHAR_LIMIT, AUDIO_CACHE_PATH
 
+import asyncio
+
+
 load_opus_lib()
+
 
 log = logging.getLogger(__name__)
 
@@ -72,9 +77,9 @@ class MusicBot(discord.Client):
         self.last_status = None
 
         self.config = Config(config_file)
-        
+
         self._setup_logging()
-        
+
         self.permissions = Permissions(perms_file, grant_all=[self.config.owner_id])
         self.str = Json(self.config.i18n_file)
 
@@ -571,7 +576,7 @@ class MusicBot(discord.Client):
 
                 try:
                     info = await self.downloader.extract_info(player.playlist.loop, song_url, download=False, process=False)
-                except downloader.youtube_dl.utils.DownloadError as e:
+                except downloader.youtube_dlc.utils.DownloadError as e:
                     if 'YouTube said:' in e.args[0]:
                         # url is bork, remove from list and put in removed list
                         log.error("Error processing youtube url:\n{}".format(e.args[0]))
@@ -990,7 +995,7 @@ class MusicBot(discord.Client):
                             await s.leave()
                             log.info('Left {} due to bot owner not found'.format(s.name))
             if unavailable_servers != 0:
-                log.info('Not proceeding with checks in {} servers due to unavailability'.format(str(unavailable_servers))) 
+                log.info('Not proceeding with checks in {} servers due to unavailability'.format(str(unavailable_servers)))
 
         elif self.guilds:
             log.warning("Owner could not be found on any guild (id: %s)\n" % self.config.owner_id)
@@ -1064,7 +1069,7 @@ class MusicBot(discord.Client):
         else:
             log.info("Not autojoining any voice channels")
             self.autojoin_channels = set()
-        
+
         if self.config.show_config_at_start:
             print(flush=True)
             log.info("Options:")
@@ -1345,7 +1350,7 @@ class MusicBot(discord.Client):
                 try:
                     if 'track' in parts:
                         res = await self.spotify.get_track(parts[-1])
-                        song_url = res['artists'][0]['name'] + ' ' + res['name'] 
+                        song_url = res['artists'][0]['name'] + ' ' + res['name']
 
                     elif 'album' in parts:
                         res = await self.spotify.get_album(parts[-1])
@@ -1357,7 +1362,7 @@ class MusicBot(discord.Client):
                             await self.cmd_play(message, player, channel, author, permissions, leftover_args, song_url)
                         await self.safe_delete_message(procmesg)
                         return Response(self.str.get('cmd-play-spotify-album-queued', "Enqueued `{0}` with **{1}** songs.").format(res['name'], len(res['tracks']['items'])))
-                    
+
                     elif 'playlist' in parts:
                         res = []
                         r = await self.spotify.get_playlist_tracks(parts[-1])
@@ -1376,7 +1381,7 @@ class MusicBot(discord.Client):
                             await self.cmd_play(message, player, channel, author, permissions, leftover_args, song_url)
                         await self.safe_delete_message(procmesg)
                         return Response(self.str.get('cmd-play-spotify-playlist-queued', "Enqueued `{0}` with **{1}** songs.").format(parts[-1], len(res)))
-                    
+
                     else:
                         raise exceptions.CommandError(self.str.get('cmd-play-spotify-unsupported', 'That is not a supported Spotify URI.'), expire_in=30)
                 except exceptions.SpotifyError:
@@ -2078,7 +2083,7 @@ class MusicBot(discord.Client):
             else:
                 print("Something strange is happening.  "
                       "You might want to restart the bot if it doesn't start working.")
-        
+
         current_entry = player.current_entry
 
         if (param.lower() in ['force', 'f']) or self.config.legacy_skip:
@@ -2422,10 +2427,10 @@ class MusicBot(discord.Client):
 
         if user_mentions:
             user = user_mentions[0]
-            
+
         if not user_mentions and not target:
             user = author
-            
+
         if not user_mentions and target:
             user = guild.get_member_named(target)
             if user == None:
@@ -2434,8 +2439,8 @@ class MusicBot(discord.Client):
                 except discord.NotFound:
                     return Response("Invalid user ID or server nickname, please double check all typing and try again.", reply=False, delete_after=30)
 
-        permissions = self.permissions.for_user(user)    
-                    
+        permissions = self.permissions.for_user(user)
+
         if user == author:
             lines = ['Command permissions in %s\n' % guild.name, '```', '```']
         else:
@@ -2527,7 +2532,7 @@ class MusicBot(discord.Client):
         """
         Usage:
             {command_prefix}disconnect
-        
+
         Forces the bot leave the current voice channel.
         """
         await self.disconnect_voice_client(guild)
@@ -2537,7 +2542,7 @@ class MusicBot(discord.Client):
         """
         Usage:
             {command_prefix}restart
-        
+
         Restarts the bot.
         Will not properly load new dependencies or file updates unless fully shutdown
         and restarted.
@@ -2556,15 +2561,15 @@ class MusicBot(discord.Client):
         """
         Usage:
             {command_prefix}shutdown
-        
+
         Disconnects from voice channels and closes the bot process.
         """
         await self.safe_send_message(channel, "\N{WAVING HAND SIGN}")
-        
+
         player = self.get_player_in(channel.guild)
         if player and player.is_paused:
             player.resume()
-        
+
         await self.disconnect_all_voice_clients()
         raise exceptions.TerminateSignal()
 
@@ -2910,7 +2915,7 @@ class MusicBot(discord.Client):
         def is_active(member):
             if not member.voice:
                 return False
-                
+
             if any([member.voice.deaf, member.voice.self_deaf, member.bot]):
                 return False
 
@@ -2956,7 +2961,7 @@ class MusicBot(discord.Client):
                         channel = player.voice_client.channel,
                         reason = ""
                     ).strip())
- 
+
                     self.server_specific_data[player.voice_client.guild]['auto_paused'] = False
                     player.resume()
 
@@ -2996,7 +3001,6 @@ class MusicBot(discord.Client):
         if guild.id in self.players:
             self.players.pop(guild.id).kill()
 
-
     async def on_guild_available(self, guild:discord.Guild):
         if not self.init_ok:
             return # Ignore pre-ready events
@@ -3012,7 +3016,6 @@ class MusicBot(discord.Client):
                 log.debug("Resuming player in \"{}\" due to availability.".format(guild.name))
                 self.server_specific_data[guild]['availability_paused'] = False
                 player.resume()
-
 
     async def on_guild_unavailable(self, guild:discord.Guild):
         log.debug("Guild \"{}\" has become unavailable.".format(guild.name))
